@@ -38,8 +38,8 @@ LOCAL_NAME = "rpi-sort"
 class ThermometerAdvertisement(Advertisement):
     def __init__(self, index):
         Advertisement.__init__(self, index, "peripheral")
-        # self.add_local_name(LOCAL_NAME)
-        self.include_tx_power = True
+        self.add_local_name(LOCAL_NAME)
+        # self.include_tx_power = True
 
 class ThermometerService(Service):
     THERMOMETER_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
