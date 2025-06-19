@@ -199,6 +199,7 @@ app.add_service(ThermometerService(0))
 app.register()
 
 adv = ThermometerAdvertisement(0)
+adv.add_service_uuid(ThermometerService.THERMOMETER_SVC_UUID)
 adv.register()
 
 try:
