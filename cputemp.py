@@ -27,6 +27,9 @@ from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
 from gpiozero import CPUTemperature
 
+from exec import game
+
+
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
 NOTIFY_TIMEOUT = 5000
 
@@ -140,6 +143,8 @@ class UnitCharacteristic(Characteristic):
             self.service.set_farenheit(False)
         elif val == "F":
             self.service.set_farenheit(True)
+        elif val == "G":
+            game()
 
     def ReadValue(self, options):
         value = []
@@ -168,6 +173,23 @@ class UnitDescriptor(Descriptor):
             value.append(dbus.Byte(c.encode()))
 
         return value
+
+class CommandCharacteristic(Characteristic):
+    UUID = '00000004-710e-4a5b-8d75-3e5b444b3c3f'  # ← Pick a new UUID
+
+    def __init__(self, service):
+        Characteristic.__init__(self, self.UUID,
+                                ['write'],
+                                service)
+
+    def WriteValue(self, value, options):
+        command = ''.join([chr(b) for b in value])
+        print(f"Received command: {command}")
+        
+        if command.strip().upper() == 'G':
+            print("Running test function...")
+            # Call your custom function here
+            game()
 
 app = Application()
 app.add_service(ThermometerService(0))
