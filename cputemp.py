@@ -93,6 +93,7 @@ class TempCharacteristic(Characteristic):
         self.notifying = True
 
         value = self.get_temperature()
+        print("TempCharacteristic StartNotify: " + str(value))
         self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         self.add_timeout(NOTIFY_TIMEOUT, self.set_temperature_callback)
 
@@ -134,6 +135,7 @@ class UnitCharacteristic(Characteristic):
 
     def WriteValue(self, value, options):
         val = str(value[0]).upper()
+        print("UnitCharacteristic WriteValue: " + val)
         if val == "C":
             self.service.set_farenheit(False)
         elif val == "F":
