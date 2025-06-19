@@ -27,6 +27,9 @@ from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
 from gpiozero import CPUTemperature
 
+from exec import game
+
+
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
 NOTIFY_TIMEOUT = 5000
 
@@ -140,6 +143,8 @@ class UnitCharacteristic(Characteristic):
             self.service.set_farenheit(False)
         elif val == "F":
             self.service.set_farenheit(True)
+        elif val == "G":
+            game()
 
     def ReadValue(self, options):
         value = []
