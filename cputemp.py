@@ -60,7 +60,6 @@ class ThermometerService(Service):
 
 class TempCharacteristic(Characteristic):
     TEMP_CHARACTERISTIC_UUID = "00000002-710e-4a5b-8d75-3e5b444bc3cf"
-
     def __init__(self, service):
         self.notifying = False
 
