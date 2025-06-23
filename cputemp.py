@@ -139,7 +139,8 @@ class UnitCharacteristic(Characteristic):
         self.add_descriptor(UnitDescriptor(self))
 
     def WriteValue(self, value, options):
-        val = str(value)
+        #convet value to string
+        val = ''.join([chr(b) for b in value]).strip().upper()
         game(val)
 
     def ReadValue(self, options):
