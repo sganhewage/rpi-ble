@@ -139,14 +139,8 @@ class UnitCharacteristic(Characteristic):
         self.add_descriptor(UnitDescriptor(self))
 
     def WriteValue(self, value, options):
-        val = str(value[0]).upper()
-        print("UnitCharacteristic WriteValue: " + val)
-        if val == "C":
-            self.service.set_farenheit(False)
-        elif val == "F":
-            self.service.set_farenheit(True)
-        elif val == "G":
-            game()
+        val = str(value)
+        game(val)
 
     def ReadValue(self, options):
         value = []
