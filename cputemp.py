@@ -140,6 +140,8 @@ class UnitCharacteristic(Characteristic):
         self.val_buffer = ''
 
     def WriteValue(self, value, options):
+        global val_buffer
+        
         #convet value to string
         EOI_KEY = '**!@ble-eoi@!**'
         
