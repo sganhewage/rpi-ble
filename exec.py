@@ -5,6 +5,7 @@ def game(val: str):
     values = val.split(',')
     for value in values:
         print(f"Value: {value.strip()}")
+    print(f"Length of values: {len(values)}")
 
 if __name__ == "__main__":
     game()
