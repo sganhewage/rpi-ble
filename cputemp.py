@@ -69,25 +69,14 @@ class TempCharacteristic(Characteristic):
                 ["notify", "read"], service)
         self.add_descriptor(TempDescriptor(self))
 
-    def get_temperature(self):
-        value = []
-        unit = "C"
-
-        cpu = CPUTemperature()
-        temp = cpu.temperature
-        if self.service.is_farenheit():
-            temp = (temp * 1.8) + 32
-            unit = "F"
-
-        strtemp = str(round(temp, 1)) + " " + unit
-        for c in strtemp:
-            value.append(dbus.Byte(c.encode()))
-
-        return value
+    def get_devices(self):
+        from listDevices import list_devices
+        devices = list_devices()
+        return devices
 
     def set_temperature_callback(self):
         if self.notifying:
-            value = self.get_temperature()
+            value = self.get_devices()
             self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
 
         return self.notifying
@@ -98,7 +87,7 @@ class TempCharacteristic(Characteristic):
 
         self.notifying = True
 
-        value = self.get_temperature()
+        value = self.get_devices()
         print("TempCharacteristic StartNotify: " + str(value))
         self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         self.add_timeout(NOTIFY_TIMEOUT, self.set_temperature_callback)
@@ -107,7 +96,7 @@ class TempCharacteristic(Characteristic):
         self.notifying = False
 
     def ReadValue(self, options):
-        value = self.get_temperature()
+        value = self.get_devices()
 
         return value
 
@@ -142,7 +131,7 @@ class UnitCharacteristic(Characteristic):
     def WriteValue(self, value, options):
         global val_buffer
         
-        #convet value to string
+        #convert value to string
         EOI_KEY = '**!@ble-eoi@!**'
         
         incoming = ''.join([chr(b) for b in value]).strip()
