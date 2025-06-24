@@ -137,18 +137,18 @@ class UnitCharacteristic(Characteristic):
                 self, self.UNIT_CHARACTERISTIC_UUID,
                 ["read", "write"], service)
         self.add_descriptor(UnitDescriptor(self))
+        self.val_buffer = ''
 
     def WriteValue(self, value, options):
-        global val
         #convet value to string
         EOI_KEY = '**!@ble-eoi@!**'
         
         incoming = ''.join([chr(b) for b in value]).strip()
         if incoming == EOI_KEY:
-            game(val)
-            val = ''
+            game(val_buffer)
+            val_buffer = ''
         else:
-            val += incoming
+            val_buffer += incoming
 
     def ReadValue(self, options):
         value = []
