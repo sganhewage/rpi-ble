@@ -139,9 +139,16 @@ class UnitCharacteristic(Characteristic):
         self.add_descriptor(UnitDescriptor(self))
 
     def WriteValue(self, value, options):
+        global val
         #convet value to string
-        val = ''.join([chr(b) for b in value]).strip().upper()
-        game(val)
+        EOI_KEY = '**!@ble-eoi@!**'
+        
+        incoming = ''.join([chr(b) for b in value]).strip()
+        if incoming == EOI_KEY:
+            game(val)
+            val = ''
+        else:
+            val += incoming
 
     def ReadValue(self, options):
         value = []
