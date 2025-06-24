@@ -34,6 +34,7 @@ GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
 NOTIFY_TIMEOUT = 5000
 
 LOCAL_NAME = "rpi-sort"
+val_buffer = ''  # Global buffer to hold incoming values
 
 class ThermometerAdvertisement(Advertisement):
     def __init__(self, index):
@@ -137,7 +138,6 @@ class UnitCharacteristic(Characteristic):
                 self, self.UNIT_CHARACTERISTIC_UUID,
                 ["read", "write"], service)
         self.add_descriptor(UnitDescriptor(self))
-        self.val_buffer = ''
 
     def WriteValue(self, value, options):
         global val_buffer
