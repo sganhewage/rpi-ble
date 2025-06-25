@@ -50,17 +50,30 @@ class BLEService(Service):
 
     def __init__(self, index):
         self.address = None
+        self.ids = None
 
         Service.__init__(self, index, self.BLE_SVC_UUID, True)
         self.add_characteristic(AvailableDevicesCharacteristic(self))
         self.add_characteristic(SendIDsCharacteristic(self))
         self.add_characteristic(SetAddressCharacteristic(self))
 
+    def sendJob(self):
+        pass
+
     def getAddress(self):
-        return self.address
+        return (self.address+"test git pull")
 
     def set_address(self, address):
         self.address = address
+        
+    def set_ids(self, ids):
+        self.ids = ids
+        
+    def getIds(self):
+        if self.ids is not None:
+            return self.ids
+        else:
+            return []
 
 class AvailableDevicesCharacteristic(Characteristic):
     GET_DEVICES_CHARACTERISTIC_UUID = "00000002-710e-4a5b-8d75-3e5b444bc3cf"
@@ -139,8 +152,12 @@ class SendIDsCharacteristic(Characteristic):
         
         incoming = ''.join([chr(b) for b in value]).strip()
         if incoming == EOI_KEY:
-            game(val_buffer)
+            values = val_buffer.split(',')
+            self.service.set_ids(values)
+            print(f"Received IDs: {values}")
             val_buffer = ''
+            
+            se
         else:
             val_buffer += incoming
 
