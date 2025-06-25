@@ -39,36 +39,36 @@ NOTIFY_TIMEOUT = 5000
 LOCAL_NAME = "rpi-sort"
 val_buffer = ''  # Global buffer to hold incoming values
 
-class ThermometerAdvertisement(Advertisement):
+class BLEAdvertisement(Advertisement):
     def __init__(self, index):
         Advertisement.__init__(self, index, "peripheral")
         self.add_local_name(LOCAL_NAME)
         # self.include_tx_power = True
 
-class ThermometerService(Service):
-    THERMOMETER_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
+class BLEService(Service):
+    BLE_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
 
     def __init__(self, index):
-        self.farenheit = True
+        self.address = None
 
-        Service.__init__(self, index, self.THERMOMETER_SVC_UUID, True)
-        self.add_characteristic(TempCharacteristic(self))
-        self.add_characteristic(UnitCharacteristic(self))
-        self.add_characteristic(CommandCharacteristic(self))
+        Service.__init__(self, index, self.BLE_SVC_UUID, True)
+        self.add_characteristic(AvailableDevicesCharacteristic(self))
+        self.add_characteristic(SendIDsCharacteristic(self))
+        self.add_characteristic(SetAddressCharacteristic(self))
 
-    def is_farenheit(self):
-        return self.farenheit
+    def getAddress(self):
+        return self.address
 
-    def set_farenheit(self, farenheit):
-        self.farenheit = farenheit
+    def set_address(self, address):
+        self.address = address
 
-class TempCharacteristic(Characteristic):
-    TEMP_CHARACTERISTIC_UUID = "00000002-710e-4a5b-8d75-3e5b444bc3cf"
+class AvailableDevicesCharacteristic(Characteristic):
+    GET_DEVICES_CHARACTERISTIC_UUID = "00000002-710e-4a5b-8d75-3e5b444bc3cf"
     def __init__(self, service):
         self.notifying = False
 
         Characteristic.__init__(
-                self, self.TEMP_CHARACTERISTIC_UUID,
+                self, self.GET_DEVICES_CHARACTERISTIC_UUID,
                 ["notify", "read"], service)
         self.add_descriptor(TempDescriptor(self))
 
@@ -77,7 +77,7 @@ class TempCharacteristic(Characteristic):
         device_str = json.dumps(devices)  # Convert dict/list to JSON string
         return [dbus.Byte(c.encode()) for c in device_str]
 
-    def set_temperature_callback(self):
+    def set_get_device_callback(self):
         if self.notifying:
             value = self.get_devices()
             self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
@@ -91,9 +91,9 @@ class TempCharacteristic(Characteristic):
         self.notifying = True
 
         value = self.get_devices()
-        print("TempCharacteristic StartNotify: " + str(value))
+        print("GetDeviceCharacteristic StartNotify: " + str(value))
         self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-        self.add_timeout(NOTIFY_TIMEOUT, self.set_temperature_callback)
+        self.add_timeout(NOTIFY_TIMEOUT, self.set_get_device_callback)
 
     def StopNotify(self):
         self.notifying = False
@@ -122,7 +122,7 @@ class TempDescriptor(Descriptor):
 
         return value
 
-class UnitCharacteristic(Characteristic):
+class SendIDsCharacteristic(Characteristic):
     UNIT_CHARACTERISTIC_UUID = "00000003-710e-4a5b-8d75-3e5b444bc3cf"
 
     def __init__(self, service):
@@ -172,7 +172,7 @@ class UnitDescriptor(Descriptor):
 
         return value
 
-class CommandCharacteristic(Characteristic):
+class SetAddressCharacteristic(Characteristic):
     UUID = '00000004-710e-4a5b-8d75-3e5b444b3c3f'  # ← Pick a new UUID
 
     def __init__(self, service):
@@ -184,17 +184,15 @@ class CommandCharacteristic(Characteristic):
         command = ''.join([chr(b) for b in value])
         print(f"Received command: {command}")
         
-        if command.strip().upper() == 'G':
-            print("Running test function...")
-            # Call your custom function here
-            game()
+        self.service.set_address(command.strip())
+        print(f"Address set to: {self.service.getAddress()}")
 
 app = Application()
-app.add_service(ThermometerService(0))
+app.add_service(BLEService(0))
 app.register()
 
-adv = ThermometerAdvertisement(0)
-adv.add_service_uuid(ThermometerService.THERMOMETER_SVC_UUID)
+adv = BLEAdvertisement(0)
+adv.add_service_uuid(BLEService.BLE_SVC_UUID)
 adv.register()
 
 try:
