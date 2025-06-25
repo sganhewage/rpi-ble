@@ -27,6 +27,9 @@ from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
 from gpiozero import CPUTemperature
 
+from listDevices import list_devices
+import json
+
 from exec import game
 
 
@@ -70,9 +73,9 @@ class TempCharacteristic(Characteristic):
         self.add_descriptor(TempDescriptor(self))
 
     def get_devices(self):
-        from listDevices import list_devices
         devices = list_devices()
-        return devices
+        device_str = json.dumps(devices)  # Convert dict/list to JSON string
+        return [dbus.Byte(c.encode()) for c in device_str]
 
     def set_temperature_callback(self):
         if self.notifying:
