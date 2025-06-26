@@ -30,7 +30,7 @@ from service import Application, Service, Characteristic, Descriptor
 from listDevicesUSB import list_usb_devices
 import json
 
-from exec import game
+from handlerFunctions import main
 
 
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
@@ -50,7 +50,7 @@ class BLEService(Service):
 
     def __init__(self, index):
         self.address = None
-        self.ids = None
+        self.ids: set = None
 
         Service.__init__(self, index, self.BLE_SVC_UUID, True)
         self.add_characteristic(AvailableDevicesCharacteristic(self))
@@ -58,12 +58,11 @@ class BLEService(Service):
         self.add_characteristic(SetAddressCharacteristic(self))
 
     def sendJob(self):
-        from exec import game
-        if self.address is not None:
-            print(f"Sending job to address: {self.address}")
-            game(self.address)
+        print(f"Starting job with address: {self.address} and IDs: {self.ids}")
+        if self.address is not None and self.ids is not None:
+            main(GPIBaddr=self.address, numParts=len(self.ids), IDset=set(self.ids))
         else:
-            print("No address set. Cannot send job.")
+            print("Address or IDs not set. Cannot start job.")
 
     def getAddress(self):
         return (self.address)
@@ -158,7 +157,7 @@ class SendIDsCharacteristic(Characteristic):
         incoming = ''.join([chr(b) for b in value]).strip()
         if incoming == EOI_KEY:
             values = val_buffer.split(',')
-            self.service.set_ids(values)
+            self.service.set_ids(set(values))
             print(f"Received IDs: {values}")
             self.service.sendJob()
             val_buffer = ''
