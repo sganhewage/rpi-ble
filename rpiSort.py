@@ -44,6 +44,7 @@ class BLEAdvertisement(Advertisement):
     def __init__(self, index):
         Advertisement.__init__(self, index, "peripheral")
         self.add_local_name(LOCAL_NAME)
+        configureDevice()  # Configure the GPIB device if needed
         # self.include_tx_power = True
 
 class BLEService(Service):
@@ -218,7 +219,6 @@ adv.add_service_uuid(BLEService.BLE_SVC_UUID)
 adv.register()
 
 try:
-    configureDevice()  # Configure the GPIB device if needed
     app.run()
 except KeyboardInterrupt:
     app.quit()
