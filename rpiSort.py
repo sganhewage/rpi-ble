@@ -61,11 +61,11 @@ class BLEService(Service):
         pass
 
     def getAddress(self):
-        return (self.address+"test git pull")
+        return (self.address)
 
     def set_address(self, address):
         self.address = address
-        
+ 
     def set_ids(self, ids):
         self.ids = ids
         
