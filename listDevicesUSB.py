@@ -7,7 +7,7 @@ def list_usb_devices():
     
     usb_devices = {}
     for device in devices:
-        if 'USB' in device:
+        if 'GPIB' in device:
             try:
                 resource = rm.open_resource(device)
                 idn = resource.query('*IDN?')
