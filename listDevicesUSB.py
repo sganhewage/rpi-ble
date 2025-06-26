@@ -1,7 +1,4 @@
 import pyvisa
-import subprocess
-import time
-from gpib_usb_configure import main
 
 def list_usb_devices():
     """List all USB devices connected to the system."""
