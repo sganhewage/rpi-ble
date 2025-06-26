@@ -25,9 +25,9 @@ import dbus
 
 from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
-from gpiozero import CPUTemperature
 
 from listDevices import list_devices
+from listDevicesUSB import list_usb_devices
 import json
 
 from exec import game
@@ -86,7 +86,7 @@ class AvailableDevicesCharacteristic(Characteristic):
         self.add_descriptor(TempDescriptor(self))
 
     def get_devices(self):
-        devices = list_devices()
+        devices = list_usb_devices()
         device_str = json.dumps(devices)  # Convert dict/list to JSON string
         return [dbus.Byte(c.encode()) for c in device_str]
 
@@ -157,7 +157,6 @@ class SendIDsCharacteristic(Characteristic):
             print(f"Received IDs: {values}")
             val_buffer = ''
             
-            se
         else:
             val_buffer += incoming
 
