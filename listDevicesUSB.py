@@ -1,26 +1,10 @@
 import pyvisa
 import subprocess
 import time
+from gpib_usb_configure import main
 
 def list_usb_devices():
-    try:
-        subprocess.run(["sudo udevadm control --reload"], check=True)
-    except Exception as e:
-        print(f"Firmware load failed or not needed: {e}")
-    
-    
-    try:
-        subprocess.run(["sudo /usr/sbin/gpib_config"], check=True)
-    except Exception as e:
-        print(f"gpib_config failed: {e}")
-        
-    for i in range(10):
-        if subprocess.call(["test", "-e", "/dev/gpib0"]) == 0:
-            break
-        time.sleep(1)
-    else:
-        raise RuntimeError("/dev/gpib0 did not appear")
-    
+    main()  # Ensure GPIB devices are configured before listing
     """List all USB devices connected to the system."""
     rm = pyvisa.ResourceManager()
     devices = rm.list_resources()
