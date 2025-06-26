@@ -1,5 +1,6 @@
 import pyvisa
 import subprocess
+import time
 
 def list_usb_devices():
     try:
