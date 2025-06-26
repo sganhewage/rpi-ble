@@ -15,6 +15,7 @@ def list_usb_devices():
                 resource = rm.open_resource(device)
                 idn = resource.query('*IDN?')
                 usb_devices[device] = idn.strip()
+                resource.close()
             except Exception as e:
                 usb_devices[device] = f"Error: {str(e)}"
     
