@@ -31,7 +31,7 @@ def main():
 
     # Step 4: Run gpib_config (adjust path if needed)
     try:
-        subprocess.run(["/usr/sbin/gpib_config"], check=True)
+        subprocess.run(["gpib_config"], check=True)
         print("gpib_config executed successfully")
     except Exception as e:
         print("gpib_config failed:", e)
