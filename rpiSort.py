@@ -160,6 +160,7 @@ class SendIDsCharacteristic(Characteristic):
             values = val_buffer.split(',')
             self.service.set_ids(values)
             print(f"Received IDs: {values}")
+            self.service.sendJob()
             val_buffer = ''
             
         else:
