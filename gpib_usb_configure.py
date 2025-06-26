@@ -5,7 +5,7 @@ import time
 # Optional: switch to root directory (if needed for your logic)
 # os.chdir("/")
 
-def main():
+def configureDevice():
     # Step 1: Reload udev rules
     try:
         subprocess.run(["udevadm", "control", "--reload"], check=True)
@@ -37,4 +37,4 @@ def main():
         print("gpib_config failed:", e)
         
 if __name__ == "__main__":
-    main()
+    configureDevice()

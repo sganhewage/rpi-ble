@@ -31,6 +31,7 @@ from listDevicesUSB import list_usb_devices
 import json
 
 from handlerFunctions import main
+from gpib_usb_configure import configureDevice
 
 
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
@@ -217,6 +218,7 @@ adv.add_service_uuid(BLEService.BLE_SVC_UUID)
 adv.register()
 
 try:
+    configureDevice()  # Configure the GPIB device if needed
     app.run()
 except KeyboardInterrupt:
     app.quit()

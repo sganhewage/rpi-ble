@@ -4,7 +4,6 @@ import time
 from gpib_usb_configure import main
 
 def list_usb_devices():
-    main()  # Ensure GPIB devices are configured before listing
     """List all USB devices connected to the system."""
     rm = pyvisa.ResourceManager()
     devices = rm.list_resources()
