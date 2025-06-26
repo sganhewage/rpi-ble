@@ -26,7 +26,7 @@ import dbus
 from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
 
-from listDevices import list_devices
+#from listDevices import list_devices
 from listDevicesUSB import list_usb_devices
 import json
 
@@ -58,7 +58,12 @@ class BLEService(Service):
         self.add_characteristic(SetAddressCharacteristic(self))
 
     def sendJob(self):
-        pass
+        from exec import game
+        if self.address is not None:
+            print(f"Sending job to address: {self.address}")
+            game(self.address)
+        else:
+            print("No address set. Cannot send job.")
 
     def getAddress(self):
         return (self.address)
