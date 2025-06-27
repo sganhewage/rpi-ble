@@ -121,12 +121,15 @@ def sortCycle(instrument: pyvisa.Resource, IDset: set, passBin=1, failBin=2)->bo
 def getBinNumber(ID: str, IDset: set, passBin=1, failBin=2, manual=False)->int:
     """Returns the bin number based on the 2DID. 
        If the ID is in the set of accepted IDs, it returns passBin, otherwise it returns failBin."""
+    print(f"Processing ID: {ID}")
     if manual:
         bin = input(f"Enter bin number for ID {ID} (1 for pass, 2 for fail): ")
         return int(bin) if bin.isdigit() and int(bin) in (passBin, failBin) else failBin
     if ID in IDset: 
+        print(f"ID {ID} in set. Sorting to pass bin {passBin}.")
         return passBin
     else:
+        print(f"ID {ID} not in set. Sorting to fail bin.")
         return failBin
         
 def collect2DIDs(excelFileDir: str, sheetName: str, columnIndex=0)->set:
@@ -151,7 +154,14 @@ def collect2DIDs(excelFileDir: str, sheetName: str, columnIndex=0)->set:
     
 def main(GPIBaddr: str, numParts: int = 1500, IDset: set = None):
     inst = configure(GPIBaddr)
+    
+    print(f"Starting sort cycle with {numParts} parts and ID set: {IDset}")
+    if IDset is None:
+        print("No ID set provided. Using empty set.")
+        IDset = set()
+    
     for i in range(numParts):
+        print(f"Processing part {i+1}/{numParts}")
         sortCycle(inst, IDset=IDset, passBin=1, failBin=2)
     
 if __name__ == "__main__":
