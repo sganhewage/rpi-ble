@@ -62,7 +62,7 @@ class BLEService(Service):
     def sendJob(self):
         print(f"Starting job with address: {self.address} and IDs: {self.ids}")
         if self.address is not None and self.ids is not None:
-            main(GPIBaddr=self.address, numParts=len(self.ids), IDset=set(self.ids))
+            main(GPIBaddr=self.address, IDset=set(self.ids))
         else:
             print("Address or IDs not set. Cannot start job.")
 
