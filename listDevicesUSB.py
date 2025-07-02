@@ -3,7 +3,9 @@ import pyvisa
 def list_usb_devices():
     """List all USB devices connected to the system."""
     rm = pyvisa.ResourceManager()
+    print("Opened Resource Manager")
     devices = rm.list_resources()
+    print(f"Found devices: {devices}")
     
     usb_devices = {}
     for device in devices:
