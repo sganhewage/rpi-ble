@@ -4,20 +4,22 @@ def list_usb_devices():
     """List all USB devices connected to the system."""
     rm = pyvisa.ResourceManager()
     print("Opened Resource Manager")
-    devices = rm.list_resources()
-    print(f"Found devices: {devices}")
     
+    possible_addresses = [f"GPIB0::{i}::INSTR" for i in range(1, 32)]
+    
+    print("Checking possible GPIB addresses...")
     usb_devices = {}
-    for device in devices:
-        if 'GPIB' in device:
-            try:
-                resource = rm.open_resource(device)
-                resource.timeout = 500  # Set timeout to 0.5 seconds
-                idn = resource.query('*IDN?')
-                usb_devices[device] = idn.strip()
-                resource.close()
-            except Exception as e:
-                usb_devices[device] = f"Error: {str(e)}"
+    for device in possible_addresses:
+        print(f"Checking {device}...")
+        try:
+            resource = rm.open_resource(device)
+            resource.timeout = 500  # Set timeout to 0.5 seconds
+            idn = resource.query('*IDN?')
+            usb_devices[device] = idn.strip()
+            print(f"Found device at {device}: {idn.strip()}")
+            resource.close()
+        except Exception as e:
+            print(f"Failed to connect to {device}: {str(e)}")
     
     return usb_devices
 
