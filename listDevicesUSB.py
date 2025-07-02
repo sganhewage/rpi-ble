@@ -12,6 +12,7 @@ def list_usb_devices():
         if 'GPIB' in device:
             try:
                 resource = rm.open_resource(device)
+                resource.timeout = 500  # Set timeout to 0.5 seconds
                 idn = resource.query('*IDN?')
                 usb_devices[device] = idn.strip()
                 resource.close()
