@@ -8,7 +8,7 @@ def list_devices():
     time.sleep(0.1)
     devices: list = monitor1.get_buffer().splitlines()
     devices = [line.strip() for line in devices if line.strip()]
-    # monitor.close()
+    monitor1.close()
     
     monitor2 = AR488Monitor()
     ret_devices = {}
@@ -25,7 +25,6 @@ def list_devices():
     else:
         print("🔍 No devices found.")
         
-    monitor1.close()
     monitor2.close()
     return ret_devices
 
