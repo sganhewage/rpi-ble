@@ -3,7 +3,7 @@ import threading
 import time
 
 # === CONFIGURATION ===
-PORT = '/dev/cu.usbserial-10'   # Update this to your serial port
+PORT = '/dev/ttyUSB0'   # Update this to your serial port
 BAUDRATE = 115200
 APPEND_CR = True     # Append carriage return (\r)
 APPEND_LF = False    # Append line feed (\n)
