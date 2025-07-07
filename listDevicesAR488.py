@@ -1,56 +1,36 @@
-import serial
-import threading
+from AR488Monitor import AR488Monitor
 import time
 
-# === CONFIGURATION ===
-PORT = '/dev/cu.usbserial-10'   # Change to your port
-BAUDRATE = 115200
-APPEND_CR = True     # Carriage Return (\r)
-APPEND_LF = False    # Line Feed (\n)
-# ======================
-
-def read_from_port(ser):
-    """Continuously read from serial and print to screen."""
-    while True:
-        if ser.in_waiting:
-            try:
-                data = ser.read(ser.in_waiting).decode(errors='ignore')
-                print(data, end='', flush=True)
-            except Exception as e:
-                print(f"[Read error]: {e}")
-
-def main():
-    try:
-        ser = serial.Serial(PORT, BAUDRATE, timeout=0.1)
-        time.sleep(2)  # Wait for Arduino reset
-        print(f"✅ Connected to {PORT} at {BAUDRATE} baud.\nType your commands below:")
-
-        # Start background reader
-        reader = threading.Thread(target=read_from_port, args=(ser,), daemon=True)
-        reader.start()
-
-        # Command loop
-        while True:
-            line = input()
-            if line.lower() in ["exit", "quit"]:
-                break
-
-            # Append terminators
-            if APPEND_CR:
-                line += '\r'
-            if APPEND_LF:
-                line += '\n'
-
-            ser.write(line.encode())
-
-    except serial.SerialException as e:
-        print(f"❌ Could not open serial port: {e}")
-    finally:
-        try:
-            ser.close()
-        except:
-            pass
-        print("🔌 Serial port closed.")
+def list_devices():
+    """List all GPIB devices connected to the system."""
+    monitor = AR488Monitor()
+    monitor.write("++fndl")
+    time.sleep(0.5)
+    devices: list = monitor.get_buffer().splitlines()
+    devices = [line.strip() for line in devices if line.strip()]
+    monitor.close()
+    
+    monitor = AR488Monitor()
+    ret_devices = {}
+    if len(devices) > 0:
+        for device in devices:
+            monitor.write(f"++addr {device}")
+            time.sleep(0.5)
+            monitor.write("*IDN?")
+            time.sleep(1.0)
+            response = monitor.get_buffer().strip()
+            if response:
+                ret_devices[f"GPIB0::{device}::INSTR"] = response
+            print(f"Device at address {device}: {response}")
+    else:
+        print("🔍 No devices found.")
+        
+    monitor.close()
+    return ret_devices
 
 if __name__ == "__main__":
-    main()
+    devices = list_devices()
+    if devices:
+        print(devices)
+    else:
+        print("No GPIB devices found.")

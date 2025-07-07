@@ -28,6 +28,7 @@ from service import Application, Service, Characteristic, Descriptor
 
 #from listDevices import list_devices
 from listDevicesUSB import list_usb_devices
+from listDevicesAR488 import list_devices
 import json
 
 from handlerFunctions import main
@@ -93,7 +94,7 @@ class AvailableDevicesCharacteristic(Characteristic):
 
     def get_devices(self):
         print("Looking for GPIB Devices...")
-        devices = list_usb_devices()
+        devices = list_devices()
         print("Found GPIB Devices: " + str(devices))
         device_str = json.dumps(devices)  # Convert dict/list to JSON string
         return [dbus.Byte(c.encode()) for c in device_str]
