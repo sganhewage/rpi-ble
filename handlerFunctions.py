@@ -1,4 +1,4 @@
-import pyvisa
+from AR488Monitor import AR488Monitor
 import pandas as pd
 import time
 
@@ -7,33 +7,26 @@ def write_log(msg: str) -> None:
     with open('communication_log.txt', 'a') as log_file:
         log_file.write(msg + '\n')
 
-def write(instrument: pyvisa.Resource, msg: str)->None:
+def write(instrument: AR488Monitor, msg: str)->None:
     """Function that sends a command and automatically logs it to the console."""
     instrument.write(msg)
     logmsg = f"-> {msg}"
     print(logmsg)
     write_log(logmsg)
     
-def read(instrument: pyvisa.Resource)->str:
+def read(instrument: AR488Monitor)->str:
     """Function that reads a command and automatically logs it to the console."""
-    msg = instrument.read()
+    msg = instrument.get_buffer()
     logmsg = f"<- {msg}"
     print(logmsg)
     write_log(logmsg)
     return msg
 
-def configure(GPIBaddr: str)->pyvisa.Resource:
+def configure(GPIBaddr: str)->AR488Monitor:
     """Configures the machine to be run, given the handler IDN and GPIB address. 
         It then connects to the handler, runs the confiugration commands, and returns the pyVISA resource for use in other methods."""
-    rm = pyvisa.ResourceManager()
-    print(rm.list_resources()) # List all connected instruments
-
-    # Replace with your actual GPIB address
-    inst = rm.open_resource(GPIBaddr)
-    
-    # Set termination characters
-    inst.write_termination = '\r\n' # This appends <CR><LF> to every write
-    inst.read_termination = '\r\n'  # This expects <CR><LF> at the end of responses
+    inst = AR488Monitor()
+    inst.write(f"++addr {GPIBaddr}")
 
     # Confirm correct device is connected
     # handlerIDN='SYNAX, S9, ID:ABCD9999, s/n:99999, MPC:1.00.0 / MCC:1.00.0'
@@ -63,7 +56,8 @@ def configure(GPIBaddr: str)->pyvisa.Resource:
     write(inst, "REQUEST,CHECKEMPTY")
     print("Waiting for SRQ...")
     while True:
-        status = inst.read_stb()
+        inst.write("++spoll")
+        status = inst.get_buffer()
         if status & 0x40:  # SRQ asserted
             if status == 0x44:
                 print("SRQ44 (Empty Socket Check) received.")
@@ -78,7 +72,7 @@ def configure(GPIBaddr: str)->pyvisa.Resource:
     
     return inst  
 
-def lotFinished(instrument: pyvisa.Resource)->bool:
+def lotFinished(instrument: AR488Monitor)->bool:
     """Checks if the the current lot is finished by sending SRQKIND? query."""
     write(instrument, "SRQKIND?")
     response = read(instrument)
@@ -88,11 +82,12 @@ def lotFinished(instrument: pyvisa.Resource)->bool:
         print(f"Error: Unexpected Response: {response}")
         return True
 
-def sortCycle(instrument: pyvisa.Resource, IDset: set, passBin=1, failBin=2)->bool:
+def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2)->bool:
     """Runs through the commands for sorting one chip, given the set of accepted 2DIDs."""
     print("Waiting for SRQ...")
     while True:
-        status = instrument.read_stb()
+        instrument.write("++spoll")
+        status = instrument.get_buffer()
         if status & 0x40:  # SRQ asserted
             if status == 0x41:
                 print("SRQ41 received.")
