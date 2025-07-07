@@ -10,6 +10,7 @@ def write_log(msg: str) -> None:
 def write(instrument: AR488Monitor, msg: str)->None:
     """Function that sends a command and automatically logs it to the console."""
     instrument.write(msg)
+    time.sleep(0.1)  # Allow time for the command to be processed
     logmsg = f"-> {msg}"
     print(logmsg)
     write_log(logmsg)
@@ -27,6 +28,7 @@ def configure(GPIBaddr: str)->AR488Monitor:
         It then connects to the handler, runs the confiugration commands, and returns the pyVISA resource for use in other methods."""
     inst = AR488Monitor()
     inst.write(f"++addr {GPIBaddr}")
+    inst._buffer = ''  # Clear the buffer before sending commands
 
     # Confirm correct device is connected
     # handlerIDN='SYNAX, S9, ID:ABCD9999, s/n:99999, MPC:1.00.0 / MCC:1.00.0'

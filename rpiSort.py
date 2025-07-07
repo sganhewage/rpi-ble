@@ -205,10 +205,13 @@ class SetAddressCharacteristic(Characteristic):
     def WriteValue(self, value, options):
         command = ''.join([chr(b) for b in value])
         print(f"Received command: {command}")
-        
-        #AR488 compatibaility. Decode f"GPIB0::{device}::INSTR"
-        if command.startswith("GPIB0::") and command.endswith("::INSTR"):
-            device = command[7:-8]  # Extract the device number
+
+        #AR488 compatibility. Decode f"GPIB0::{device}::INSTR"
+        import re
+        match = re.search(r"GPIB0::(\d+)::INSTR", command)
+        if match:
+            device = match.group(1)
+            print(device)
         
         self.service.set_address(device.strip())
         print(f"Address set to: {self.service.getAddress()}")
