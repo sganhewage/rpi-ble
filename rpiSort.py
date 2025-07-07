@@ -26,13 +26,10 @@ import dbus
 from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
 
-#from listDevices import list_devices
-from listDevicesUSB import list_usb_devices
 from listDevicesAR488 import list_devices
 import json
 
 from handlerFunctions import main
-from gpib_usb_configure import configureDevice
 
 
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
@@ -45,7 +42,6 @@ class BLEAdvertisement(Advertisement):
     def __init__(self, index):
         Advertisement.__init__(self, index, "peripheral")
         self.add_local_name(LOCAL_NAME)
-        configureDevice()  # Configure the GPIB device if needed
         # self.include_tx_power = True
 
 class BLEService(Service):
