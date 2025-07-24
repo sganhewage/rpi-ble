@@ -2,115 +2,87 @@ import serial
 import threading
 import time
 
-# === CONFIGURATION ===
-PORT = '/dev/ttyUSB0'   # Update this to your serial port
-BAUDRATE = 115200
-APPEND_CR = True     # Append carriage return (\r)
-APPEND_LF = False    # Append line feed (\n)
-# ======================
-
 class AR488Monitor:
-    def __init__(self, port=PORT, baudrate=BAUDRATE, append_cr=APPEND_CR, append_lf=APPEND_LF):
+    def __init__(self, port='/dev/tty/USB0', baudrate=115200, append_cr=True, append_lf=False):
         self.port = port
         self.baudrate = baudrate
         self.append_cr = append_cr
         self.append_lf = append_lf
         self.ser = None
-        self._buffer = ""
-        self._stop_reader = False
-        self._lock = threading.Lock()
+        self.buffer = ""
+        self.lock = threading.Lock()
+        self._stop_thread = False
+
         self._connect()
         self._start_reader()
 
-
     def _connect(self):
         self.ser = serial.Serial(self.port, self.baudrate, timeout=0.1)
-        time.sleep(2)  # Let device reset
+        time.sleep(2)  # Arduino reset time
         print(f"✅ Connected to {self.port} at {self.baudrate} baud.")
 
     def _start_reader(self):
-        thread = threading.Thread(target=self._read_from_serial, daemon=True)
+        thread = threading.Thread(target=self._reader_loop, daemon=True)
         thread.start()
 
-    def _read_from_serial(self):
-        while not self._stop_reader:
+    def _reader_loop(self):
+        while not self._stop_thread:
             try:
                 if self.ser.in_waiting:
                     data = self.ser.read(self.ser.in_waiting).decode(errors='ignore')
-                    with self._lock:
-                        self._buffer += data
-                    print(data, end='', flush=True)
+                    with self.lock:
+                        self.buffer += data
             except Exception as e:
-                print(f"[Read error]: {e}")
-            time.sleep(0.01)
-
+                print(f"[Read error] {e}")
+            time.sleep(0.05)
 
     def write(self, command: str):
-        """Write a command to the serial port and reset response buffer."""
-        with self._lock:
-            self._buffer = ""  # clear previous response
+        """Sends a command and clears the buffer before doing so."""
+        with self.lock:
+            self.buffer = ""
+        line = command
         if self.append_cr:
-            command += '\r'
+            line += '\r'
         if self.append_lf:
-            command += '\n'
-        self.ser.write(command.encode())
+            line += '\n'
+        self.ser.write(line.encode())
 
-    def get_buffer(self) -> str:
-        """Return the latest buffered response (since last write)."""
-        with self._lock:
-            return self._buffer.strip()
+    def read(self) -> str:
+        """Returns whatever was received since the last write."""
+        with self.lock:
+            return self.buffer.strip()
+        
+    def getStatusByte(self) -> int:
+        """Returns the status byte from the device."""
+        self.write("++spoll")
+        time.sleep(0.2)
+        status = self.read().strip()
+        # invalid literal for int() with base 16: '0\r\n0\r\n0'
+        if status and status.startswith('0x'):
+            status = status.split('\r\n')[0]
+        elif status and status.startswith('0'):
+            status = status.split('\r\n')[0]
+        if status:
+            return int(status)
 
     def close(self):
-        self._stop_reader = True  # tell thread to exit cleanly
-        time.sleep(0.05)          # short pause to allow thread to exit
+        self._stop_thread = True
+        time.sleep(0.1)
         if self.ser and self.ser.is_open:
             self.ser.close()
             print("🔌 Serial port closed.")
 
-    def interactive(self):
-        print("📝 Type commands below. Type 'exit' or 'quit' to close.")
-        try:
-            while True:
-                line = input()
-                if line.lower() in ["exit", "quit"]:
-                    break
-                self.write(line)
-                time.sleep(0.1)
-                print(f"\n📦 Response Buffer:\n{self.get_buffer()}\n")
-        except (KeyboardInterrupt, EOFError):
-            pass
-        finally:
-            self.close()
-
 # Example usage
 if __name__ == "__main__":
-    monitor = AR488Monitor()
-    # monitor.write("++verbose 0")
-    monitor.write("++fndl")
-    time.sleep(0.5)
-    print(monitor.get_buffer())
-    monitor.close()
-    
-    monitor = AR488Monitor()
-    monitor.write("++addr 5")
-    time.sleep(0.5)
-    monitor.write("*IDN?")
-    time.sleep(1.0)
-    response = monitor.get_buffer()
-    print("Device responded:", response)
-    
-    monitor.write("++addr 7")
-    time.sleep(0.5)
-    monitor.write("*IDN?")
-    time.sleep(1.0)
-    response = monitor.get_buffer()
-    print("Device responded:", response)
-    
-    monitor.write("++addr 5")
-    time.sleep(0.5)
-    monitor.write("*IDN?")
-    time.sleep(1.0)
-    response = monitor.get_buffer()
-    print("Device responded:", response)
-    monitor.close()
+    ar = AR488Monitor()
 
+    try:
+        while True:
+            cmd = input(">> ")
+            if cmd.lower() in ["exit", "quit"]:
+                break
+            ar.write(cmd)
+            time.sleep(0.5)
+            print("📥 Response:", ar.read())
+    finally:
+        ar.close()

@@ -1,5 +1,5 @@
 from AR488Monitor import AR488Monitor
-import pandas as pd
+# import pandas as pd
 import time
 
 def write_log(msg: str) -> None:
@@ -17,7 +17,7 @@ def write(instrument: AR488Monitor, msg: str)->None:
     
 def read(instrument: AR488Monitor)->str:
     """Function that reads a command and automatically logs it to the console."""
-    msg = instrument.get_buffer()
+    msg = instrument.read()
     logmsg = f"<- {msg}"
     print(logmsg)
     write_log(logmsg)
@@ -25,9 +25,11 @@ def read(instrument: AR488Monitor)->str:
 
 def configure(GPIBaddr: str)->AR488Monitor:
     """Configures the machine to be run, given the handler IDN and GPIB address. 
-        It then connects to the handler, runs the confiugration commands, and returns the pyVISA resource for use in other methods."""
+        It then connects to the handler, runs the configuration commands, and returns the AR488 resource for use in other methods."""
     inst = AR488Monitor()
     inst.write(f"++addr {GPIBaddr}")
+    time.sleep(0.1)  # Allow time for the address to be set
+    inst.write("++clr")
     inst._buffer = ''  # Clear the buffer before sending commands
 
     # Confirm correct device is connected
@@ -59,7 +61,8 @@ def configure(GPIBaddr: str)->AR488Monitor:
     print("Waiting for SRQ...")
     while True:
         inst.write("++spoll")
-        status = inst.get_buffer()
+        status = inst.getStatusByte()
+        print(f"Status byte: {hex(status)}")
         if status & 0x40:  # SRQ asserted
             if status == 0x44:
                 print("SRQ44 (Empty Socket Check) received.")
@@ -89,7 +92,7 @@ def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2)->bool:
     print("Waiting for SRQ...")
     while True:
         instrument.write("++spoll")
-        status = instrument.get_buffer()
+        status = int(instrument.get_buffer())
         if status & 0x40:  # SRQ asserted
             if status == 0x41:
                 print("SRQ41 received.")
@@ -162,4 +165,4 @@ def main(GPIBaddr: str, numParts: int = 1500, IDset: set = None):
         sortCycle(inst, IDset=IDset, passBin=1, failBin=2)
     
 if __name__ == "__main__":
-    main()
+    main("GPIB0::1::INSTR")
