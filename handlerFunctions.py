@@ -60,7 +60,7 @@ def configure(GPIBaddr: str)->AR488Monitor:
     write(inst, "REQUEST,CHECKEMPTY")
     print("Waiting for SRQ...")
     while True:
-        inst.write("++spoll")
+        time.sleep(0.5)
         status = inst.getStatusByte()
         print(f"Status byte: {hex(status)}")
         if status & 0x40:  # SRQ asserted
@@ -69,7 +69,6 @@ def configure(GPIBaddr: str)->AR488Monitor:
                 break
             else:
                 print(f"SRQ asserted, but not ESC (status byte = {hex(status)}). Waiting...")
-        time.sleep(0.1)
     print("SRQ asserted. Reading CHECKEMPTY message...")
     response = read(inst)
     assert response == 'CHECKEMPTY', f"Expected \'CHECKEMPTY\' but received \'{response}\'"

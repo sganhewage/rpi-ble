@@ -3,7 +3,7 @@ import threading
 import time
 
 class AR488Monitor:
-    def __init__(self, port='/dev/tty/USB0', baudrate=115200, append_cr=True, append_lf=False):
+    def __init__(self, port='/dev/cu.usbserial-10', baudrate=115200, append_cr=True, append_lf=False):
         self.port = port
         self.baudrate = baudrate
         self.append_cr = append_cr
@@ -54,16 +54,16 @@ class AR488Monitor:
         
     def getStatusByte(self) -> int:
         """Returns the status byte from the device."""
+        self.write("++clr")
+        time.sleep(0.1)
         self.write("++spoll")
-        time.sleep(0.2)
-        status = self.read().strip()
-        # invalid literal for int() with base 16: '0\r\n0\r\n0'
-        if status and status.startswith('0x'):
-            status = status.split('\r\n')[0]
-        elif status and status.startswith('0'):
-            status = status.split('\r\n')[0]
-        if status:
-            return int(status)
+        time.sleep(1)
+        status = self.read()
+        if not status:
+            print("No status byte received.")
+            return -1
+        
+        return int(status)
 
     def close(self):
         self._stop_thread = True
@@ -77,12 +77,8 @@ if __name__ == "__main__":
     ar = AR488Monitor()
 
     try:
-        while True:
-            cmd = input(">> ")
-            if cmd.lower() in ["exit", "quit"]:
-                break
-            ar.write(cmd)
-            time.sleep(0.5)
-            print("📥 Response:", ar.read())
+        ar.write("++addr 1")
+        print(ar.getStatusByte())
+
     finally:
         ar.close()
