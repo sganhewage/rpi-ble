@@ -49,18 +49,45 @@ class AR488Monitor:
 
     def read(self) -> str:
         """Returns whatever was received since the last write."""
+        time.sleep(0.1)  # Allow time for the command to be processed
+        for _ in range(5):  # Retry reading if buffer is empty
+            if not self.buffer:
+                time.sleep(0.3)
+            else:
+                break
         with self.lock:
             return self.buffer.strip()
         
+    def manual_read(self) -> str:
+        self.write("++read")
+        time.sleep(0.1)  # Allow time for the command to be processed
+        with self.lock:
+            response = self.buffer.strip()
+            self.buffer = ""
+        return response
+        
+    def clear_buffer(self):
+        """Clears the internal buffer."""
+        time.sleep(1)
+        with self.lock:
+            self.buffer = ""
+        print("Buffer cleared.")
+        
     def getStatusByte(self) -> int:
         """Returns the status byte from the device."""
-        self.write("++clr")
         time.sleep(0.1)
+        self.write("++clr")
+        time.sleep(0.2)
         self.write("++spoll")
-        time.sleep(1)
+        time.sleep(0.5)
         status = self.read()
         if not status:
             print("No status byte received.")
+            return -1
+        
+        if not status.isdigit():
+            print(f"Unexpected status byte format: {status}")
+            time.sleep(0.5)
             return -1
         
         return int(status)

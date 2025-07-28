@@ -2,6 +2,8 @@ from AR488Monitor import AR488Monitor
 # import pandas as pd
 import time
 
+handlerReady = False
+
 def write_log(msg: str) -> None:
     """Function that writes a message to the log file."""
     with open('communication_log.txt', 'a') as log_file:
@@ -10,7 +12,7 @@ def write_log(msg: str) -> None:
 def write(instrument: AR488Monitor, msg: str)->None:
     """Function that sends a command and automatically logs it to the console."""
     instrument.write(msg)
-    time.sleep(0.1)  # Allow time for the command to be processed
+    time.sleep(0.3)  # Allow time for the command to be processed
     logmsg = f"-> {msg}"
     print(logmsg)
     write_log(logmsg)
@@ -24,6 +26,8 @@ def read(instrument: AR488Monitor)->str:
     return msg
 
 def configure(GPIBaddr: str)->AR488Monitor:
+    global handlerReady
+    
     """Configures the machine to be run, given the handler IDN and GPIB address. 
         It then connects to the handler, runs the configuration commands, and returns the AR488 resource for use in other methods."""
     inst = AR488Monitor()
@@ -37,6 +41,22 @@ def configure(GPIBaddr: str)->AR488Monitor:
     # write(inst, "*IDN?")
     # response = read(inst)
     # assert response == handlerIDN, f"Received Handler IDN:\t{response}\ndoes not match provided IDN:\t{handlerIDN}" 
+    
+    # Check if handler is already testing
+    for _ in range(3):
+        time.sleep(0.5)
+        status = inst.getStatusByte()
+        print(f"Status byte: {hex(status)}")
+        if status & 0x40:  # SRQ asserted
+            if status == 0x41:
+                print("SRQ41 (Handler Ready) received.")
+                handlerReady = True
+                break
+    
+    if handlerReady:
+        print("Handler is ready for configuration.")
+        handlerReady = True
+        return inst
     
     # Begin Configuration Commands
     write(inst, "CONFIGURE,SRQ=Y")
@@ -70,6 +90,9 @@ def configure(GPIBaddr: str)->AR488Monitor:
             else:
                 print(f"SRQ asserted, but not ESC (status byte = {hex(status)}). Waiting...")
     print("SRQ asserted. Reading CHECKEMPTY message...")
+    
+    inst.write("++read")
+    time.sleep(0.5)  # Allow time for the response to be processed
     response = read(inst)
     assert response == 'CHECKEMPTY', f"Expected \'CHECKEMPTY\' but received \'{response}\'"
     write(inst, "ECHOOK")
@@ -86,36 +109,69 @@ def lotFinished(instrument: AR488Monitor)->bool:
         print(f"Error: Unexpected Response: {response}")
         return True
 
-def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2)->bool:
+def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2, srqReceived=False)->bool:
     """Runs through the commands for sorting one chip, given the set of accepted 2DIDs."""
-    print("Waiting for SRQ...")
-    while True:
-        instrument.write("++spoll")
-        status = int(instrument.get_buffer())
-        if status & 0x40:  # SRQ asserted
-            if status == 0x41:
-                print("SRQ41 received.")
-                break
-            else:
-                print(f"SRQ asserted, but not ESC (status byte = {hex(status)}). Waiting...")
-        time.sleep(0.1)
-    print("SRQ asserted. Sending FULLSITES? message...")
+    if not srqReceived:
+        print("Waiting for SRQ...")
+        while True:
+            time.sleep(0.5)
+            status = instrument.getStatusByte()
+            print(f"Status byte: {hex(status)}")
+            if status & 0x40:  # SRQ asserted
+                if status == 0x41:
+                    print("SRQ41 received.")
+                    break
+                if status == 0x44:
+                    print("SRQ44 (Empty Socket Check) received.")
+                    print("SRQ asserted. Reading CHECKEMPTY message...")
+                    
+                    instrument.write("++read")
+                    time.sleep(0.5)  # Allow time for the response to be processed
+                    response = read(instrument)
+                    assert response == 'CHECKEMPTY', f"Expected \'CHECKEMPTY\' but received \'{response}\'"
+                    write(instrument, "ECHOOK")
+                else:
+                    print(f"SRQ asserted, but not ESC (status byte = {hex(status)}). Waiting...")
+        print("SRQ asserted. Sending FULLSITES? message...")
     
     write(instrument, "FULLSITES?")
     response = read(instrument)
-    
+    for _ in range(1):  # Retry reading if response is not as expected
+        if not response.startswith("Fullsites"):
+            write(instrument, "FULLSITES?")
+            response = read(instrument)
+        else:
+            break
+
     write(instrument, "QRC?")
     response = read(instrument)
+    for _ in range(1):
+        if not response.startswith("QRC:"):
+            write(instrument, "QRC?")
+            response = read(instrument)
+        else:
+            break
     ID = response[response.find(':')+1:response.find(',')]
     
     write(instrument, "PAUSE")
     bin = getBinNumber(ID=ID, IDset=IDset)  # Wait for bin decision
     write(instrument, "RESUME")
+    time.sleep(0.5)  # Allow time for the command to be processed
     
     write(instrument, f"BINON:00000000,00000000,00000000,0000000{bin}")
+    time.sleep(0.1)  # Allow time for the command to be processed
+    response = read(instrument)  # Read the response to BINON command
     
-    read(instrument)  # Read the response to BINON command
+    for _ in range(1):  # Retry reading if response is not as expected 
+        if not response.startswith("ECHO:"):
+            write(instrument, f"BINON:00000000,00000000,00000000,0000000{bin}")
+            read(instrument)  # Read the response again if it doesn't start with ECHO
+        else:
+            break
+    
     write(instrument, "ECHOOK")
+    
+    instrument.clear_buffer()  # Clear the buffer after processing the command
      
 def getBinNumber(ID: str, IDset: set, passBin=1, failBin=2, manual=False)->int:
     """Returns the bin number based on the 2DID. 
@@ -152,6 +208,8 @@ def collect2DIDs(excelFileDir: str, sheetName: str, columnIndex=0)->set:
         return None
     
 def main(GPIBaddr: str, numParts: int = 1500, IDset: set = None):
+    global handlerReady
+    
     inst = configure(GPIBaddr)
     
     print(f"Starting sort cycle with {numParts} parts and ID set: {IDset}")
@@ -161,7 +219,17 @@ def main(GPIBaddr: str, numParts: int = 1500, IDset: set = None):
     
     for i in range(numParts):
         print(f"Processing part {i+1}/{numParts}")
-        sortCycle(inst, IDset=IDset, passBin=1, failBin=2)
+        sortCycle(inst, IDset=IDset, passBin=1, failBin=2, srqReceived=handlerReady)
+        handlerReady=False
     
 if __name__ == "__main__":
-    main("GPIB0::1::INSTR")
+    IDset = {
+        "141JWWY043060M",
+        "141JWWY01D070P",
+        "141JWWY0890A0J",
+        "141JWWY01A0405",
+        "141JWWY0910308",
+        "141JWWY01A090D",
+        "141JWWY091050G"
+    }
+    main("GPIB0::1::INSTR", IDset=IDset)
