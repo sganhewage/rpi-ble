@@ -2,8 +2,13 @@ import serial
 import threading
 import time
 
+#PORT = '/dev/cu.usbserial-10'  # Mac port
+PORT = '/dev/ttyUSB0'  # Raspberry Pi port
+
+BAUDRATE = 115200  # Adjust as necessary
+
 class AR488Monitor:
-    def __init__(self, port='/dev/cu.usbserial-10', baudrate=115200, append_cr=True, append_lf=False):
+    def __init__(self, port=PORT, baudrate=BAUDRATE, append_cr=True, append_lf=False):
         self.port = port
         self.baudrate = baudrate
         self.append_cr = append_cr
