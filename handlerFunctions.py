@@ -19,7 +19,7 @@ def write(instrument: AR488Monitor, msg: str)->None:
     
 def read(instrument: AR488Monitor)->str:
     """Function that reads a command and automatically logs it to the console."""
-    msg = instrument.read()
+    msg = instrument.manual_read()
     logmsg = f"<- {msg}"
     print(logmsg)
     write_log(logmsg)
@@ -35,28 +35,6 @@ def configure(GPIBaddr: str)->AR488Monitor:
     time.sleep(0.1)  # Allow time for the address to be set
     inst.write("++clr")
     inst._buffer = ''  # Clear the buffer before sending commands
-
-    # Confirm correct device is connected
-    # handlerIDN='SYNAX, S9, ID:ABCD9999, s/n:99999, MPC:1.00.0 / MCC:1.00.0'
-    # write(inst, "*IDN?")
-    # response = read(inst)
-    # assert response == handlerIDN, f"Received Handler IDN:\t{response}\ndoes not match provided IDN:\t{handlerIDN}" 
-    
-    # Check if handler is already testing
-    for _ in range(3):
-        time.sleep(0.5)
-        status = inst.getStatusByte()
-        print(f"Status byte: {hex(status)}")
-        if status & 0x40:  # SRQ asserted
-            if status == 0x41:
-                print("SRQ41 (Handler Ready) received.")
-                handlerReady = True
-                break
-    
-    if handlerReady:
-        print("Handler is ready for configuration.")
-        handlerReady = True
-        return inst
     
     # Begin Configuration Commands
     write(inst, "CONFIGURE,SRQ=Y")
@@ -91,7 +69,7 @@ def configure(GPIBaddr: str)->AR488Monitor:
                 print(f"SRQ asserted, but not ESC (status byte = {hex(status)}). Waiting...")
     print("SRQ asserted. Reading CHECKEMPTY message...")
     
-    inst.write("++read")
+    # inst.write("++read")
     time.sleep(0.5)  # Allow time for the response to be processed
     response = read(inst)
     assert response == 'CHECKEMPTY', f"Expected \'CHECKEMPTY\' but received \'{response}\'"
@@ -143,6 +121,7 @@ def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2, srqRec
         else:
             break
 
+    time.sleep(0.2)  # Allow time for the command to be processed
     write(instrument, "QRC?")
     response = read(instrument)
     for _ in range(1):
@@ -156,19 +135,12 @@ def sortCycle(instrument: AR488Monitor, IDset: set, passBin=1, failBin=2, srqRec
     write(instrument, "PAUSE")
     bin = getBinNumber(ID=ID, IDset=IDset)  # Wait for bin decision
     write(instrument, "RESUME")
-    time.sleep(0.5)  # Allow time for the command to be processed
+    time.sleep(0.2)  # Allow time for the command to be processed
     
     write(instrument, f"BINON:00000000,00000000,00000000,0000000{bin}")
-    time.sleep(0.1)  # Allow time for the command to be processed
     response = read(instrument)  # Read the response to BINON command
     
-    for _ in range(1):  # Retry reading if response is not as expected 
-        if not response.startswith("ECHO:"):
-            write(instrument, f"BINON:00000000,00000000,00000000,0000000{bin}")
-            read(instrument)  # Read the response again if it doesn't start with ECHO
-        else:
-            break
-    
+    if not response.startswith("E"): write(instrument, f"BINON:00000000,00000000,00000000,0000000{bin}")
     write(instrument, "ECHOOK")
     
     instrument.clear_buffer()  # Clear the buffer after processing the command

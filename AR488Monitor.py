@@ -2,8 +2,8 @@ import serial
 import threading
 import time
 
-#PORT = '/dev/cu.usbserial-10'  # Mac port
-PORT = '/dev/ttyUSB0'  # Raspberry Pi port
+PORT = '/dev/cu.usbmodem101'  # Mac port
+# PORT = '/dev/ttyUSB0'  # Raspberry Pi port
 
 BAUDRATE = 115200  # Adjust as necessary
 
@@ -25,6 +25,7 @@ class AR488Monitor:
         self.ser = serial.Serial(self.port, self.baudrate, timeout=0.1)
         time.sleep(2)  # Arduino reset time
         print(f"✅ Connected to {self.port} at {self.baudrate} baud.")
+        self.write("++auto 0")  # Clear the buffer on connection
 
     def _start_reader(self):
         thread = threading.Thread(target=self._reader_loop, daemon=True)
@@ -51,11 +52,16 @@ class AR488Monitor:
         if self.append_lf:
             line += '\n'
         self.ser.write(line.encode())
+        
+    def double_write(self, command: str):
+        """Sends a command twice to ensure it is processed."""
+        self.write(command)
+        self.write(command)
 
     def read(self) -> str:
         """Returns whatever was received since the last write."""
         time.sleep(0.1)  # Allow time for the command to be processed
-        for _ in range(5):  # Retry reading if buffer is empty
+        for _ in range(15):  # Retry reading if buffer is empty
             if not self.buffer:
                 time.sleep(0.3)
             else:
@@ -64,12 +70,15 @@ class AR488Monitor:
             return self.buffer.strip()
         
     def manual_read(self) -> str:
+        time.sleep(0.3)  # Allow time for the command to be processed
         self.write("++read")
-        time.sleep(0.1)  # Allow time for the command to be processed
+        for _ in range(15):  # Retry reading if buffer is empty
+            if not self.buffer:
+                time.sleep(0.3)
+            else:
+                break
         with self.lock:
-            response = self.buffer.strip()
-            self.buffer = ""
-        return response
+            return self.buffer.strip()
         
     def clear_buffer(self):
         """Clears the internal buffer."""
@@ -85,7 +94,9 @@ class AR488Monitor:
         time.sleep(0.2)
         self.write("++spoll")
         time.sleep(0.5)
-        status = self.read()
+        with self.lock:
+            status = self.buffer.strip()
+            self.buffer = ""
         if not status:
             print("No status byte received.")
             return -1
