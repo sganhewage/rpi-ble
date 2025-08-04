@@ -2,8 +2,8 @@ import serial
 import threading
 import time
 
-PORT = '/dev/cu.usbmodem101'  # Mac port
-# PORT = '/dev/ttyUSB0'  # Raspberry Pi port
+# PORT = '/dev/cu.usbmodem101'  # Mac port
+PORT = '/dev/ttyUSB0'  # Raspberry Pi port
 
 BAUDRATE = 115200  # Adjust as necessary
 
