@@ -5,22 +5,21 @@ def list_devices():
     """List all GPIB devices connected to the system."""
     monitor1 = AR488Monitor()
     monitor1.write("++fndl")
-    time.sleep(0.5)
     response = monitor1.read().strip()
-    print(f"Response from ++fndl: {response}")
-    devices: list = monitor1.read().splitlines()
+    devices: list = response.splitlines()
     devices = [line.strip() for line in devices if line.strip()]
-    monitor1.write("++clr")
+    print(f"Response from ++fndl: {devices}")
+    # monitor1.write("++clr")
     
-    time.sleep(0.1)
+    time.sleep(0.2)
     ret_devices = {}
     if len(devices) > 0:
         for device in devices:
             monitor1.write(f"++addr {device}")
-            time.sleep(0.1)
+            monitor1.write("++clr")
             monitor1.write("*IDN?")
-            time.sleep(0.1)
-            response = monitor1.read().strip()
+            time.sleep(0.2)
+            response = monitor1.manual_read().strip()
 
             if response:
                 ret_devices[f"GPIB0::{device}::INSTR"] = response
@@ -32,8 +31,8 @@ def list_devices():
     return ret_devices
 
 if __name__ == "__main__":
-    devices = list_devices()
-    if devices:
-        print(devices)
+    response = list_devices()
+    if response:
+        print(f"Device identification: {response}")
     else:
         print("No GPIB devices found.")

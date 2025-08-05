@@ -3,7 +3,8 @@ import threading
 import time
 
 # PORT = '/dev/cu.usbmodem101'  # Mac port
-PORT = '/dev/ttyUSB0'  # Raspberry Pi port
+# PORT = '/dev/ttyUSB0'  # Arduino Nano Rpi port
+PORT = '/dev/ttyACM0'  # Nano Every Rpi port
 
 BAUDRATE = 115200  # Adjust as necessary
 
