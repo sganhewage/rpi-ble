@@ -152,7 +152,7 @@ def collect2DIDs(excelFileDir: str, sheetName: str, columnIndex=0)->set:
         print(f"An error occurred: {e}")
         return None
     
-def main(GPIBaddr: str, numParts: int = 1500, IDset: set = None):
+def main(GPIBaddr: str, numParts: int = 30000, IDset: set = None):
     inst = configure(GPIBaddr)
     
     print(f"Starting sort cycle with {numParts} parts and ID set: {IDset}")
