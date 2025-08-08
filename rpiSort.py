@@ -95,8 +95,11 @@ class AvailableDevicesCharacteristic(Characteristic):
         print("Looking for GPIB Devices...")
         devices = list_usb_devices()
         print("Found GPIB Devices: " + str(devices))
-        device_str = json.dumps(devices)  # Convert dict/list to JSON string
-        return [dbus.Byte(c.encode()) for c in device_str]
+        device_str = json.dumps(devices)
+        
+        # ✅ This fixes compatibility with Windows Chrome
+        value = dbus.ByteArray(device_str.encode('utf-8'))
+        return value
 
     def set_get_device_callback(self):
         if self.notifying:
